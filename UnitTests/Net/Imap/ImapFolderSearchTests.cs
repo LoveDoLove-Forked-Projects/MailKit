@@ -376,7 +376,10 @@ namespace UnitTests.Net.Imap {
 					Assert.That (uids[i].Id, Is.EqualTo (i + 1), $"Unexpected value for uids[{i}]");
 
 				var cex = Assert.Throws<ImapCommandException> (() => inbox.Search (SearchQuery.Filter ("MyUndefinedFilter")));
-				Assert.That (cex.ResponseCode, Is.EqualTo ("UNDEFINED-FILTER"), "ResponseCode");
+				Assert.That (cex.ResponseCodes, Has.Count.EqualTo (1), "ResponseCodes");
+				Assert.That (cex.ResponseCodes[0], Is.InstanceOf<UndefinedFilterResponseCode> (), "ResponseCodes[0]");
+				Assert.That (((UndefinedFilterResponseCode) cex.ResponseCodes[0]).Name, Is.EqualTo ("MyUndefinedFilter"), "UndefinedFilter.Name");
+				Assert.That (cex.ResponseCodes[0].IsTagged, Is.True, "UndefinedFilter.IsTagged");
 				Assert.That (cex.ErrorType, Is.EqualTo (CommandErrorType.NotFound), "ErrorType");
 
 				// Now disable the FILTERS extension and try again...
@@ -421,7 +424,10 @@ namespace UnitTests.Net.Imap {
 					Assert.That (uids[i].Id, Is.EqualTo (i + 1), $"Unexpected value for uids[{i}]");
 
 				var cex = Assert.ThrowsAsync<ImapCommandException> (() => inbox.SearchAsync (SearchQuery.Filter ("MyUndefinedFilter")));
-				Assert.That (cex.ResponseCode, Is.EqualTo ("UNDEFINED-FILTER"), "ResponseCode");
+				Assert.That (cex.ResponseCodes, Has.Count.EqualTo (1), "ResponseCodes");
+				Assert.That (cex.ResponseCodes[0], Is.InstanceOf<UndefinedFilterResponseCode> (), "ResponseCodes[0]");
+				Assert.That (((UndefinedFilterResponseCode) cex.ResponseCodes[0]).Name, Is.EqualTo ("MyUndefinedFilter"), "UndefinedFilter.Name");
+				Assert.That (cex.ResponseCodes[0].IsTagged, Is.True, "UndefinedFilter.IsTagged");
 				Assert.That (cex.ErrorType, Is.EqualTo (CommandErrorType.NotFound), "ErrorType");
 
 				// Now disable the SAVEDATE extension and try again...

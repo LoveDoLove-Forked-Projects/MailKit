@@ -240,7 +240,7 @@ namespace MailKit.Net.Imap {
 				switch (code.Type) {
 				case ImapResponseCodeType.PermanentFlags:
 					var permanent = (PermanentFlagsResponseCode) code;
-					PermanentKeywords = permanent.Keywords;
+					PermanentKeywords = permanent.KeywordSet;
 					PermanentFlags = permanent.Flags;
 					break;
 				case ImapResponseCodeType.ReadOnly:
@@ -5551,16 +5551,16 @@ namespace MailKit.Net.Imap {
 		{
 			var rc = ic.GetResponseCode (ImapResponseCodeType.CopyUid);
 
-			if (rc is CopyUidResponseCode copy && copy.SrcUidSet != null && copy.DestUidSet != null) {
+			if (rc is CopyUidResponseCode copy) {
 				if (dest == null) {
-					dest = new UniqueIdSet (copy.DestUidSet.Validity, copy.DestUidSet.SortOrder);
-					src = new UniqueIdSet (copy.SrcUidSet.Validity, copy.SrcUidSet.SortOrder);
+					dest = new UniqueIdSet (copy.DestinationUidSet.Validity, copy.DestinationUidSet.SortOrder);
+					src = new UniqueIdSet (copy.SourceUidSet.Validity, copy.SourceUidSet.SortOrder);
 				}
 
-				dest.AddRange (copy.DestUidSet);
-				src!.AddRange (copy.SrcUidSet);
+				dest.AddRange (copy.DestinationUidSet);
+				src!.AddRange (copy.SourceUidSet);
 
-				return new UniqueIdMap (copy.SrcUidSet, copy.DestUidSet);
+				return new UniqueIdMap (copy.SourceUidSet, copy.DestinationUidSet);
 			}
 
 			return UniqueIdMap.Empty;

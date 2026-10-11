@@ -399,9 +399,6 @@ listed above.
   * **Fix:** Remove the call, or put it behind `#if NET8_0_OR_GREATER`.
 * **`DeliveryStatusNotificationType`** moved from `MailKit.Net.Smtp` to `MailKit`.
   * **Fix:** Add `using MailKit;`.
-* **`ImapCommandException`** has new constructors. Calls like
-  `new ImapCommandException (response, responseText, message, null)` are now ambiguous.
-  * **Fix:** Cast the `null`, e.g. `(Exception) null`.
 * **`AnnotationAttribute (string)`** now validates the specifier (RFC 5257 §3.2). It throws
   `ArgumentException` for empty components (a leading or trailing `.`, or `..`), NUL or non-ASCII
   characters, or misplaced `priv`/`shared` components.

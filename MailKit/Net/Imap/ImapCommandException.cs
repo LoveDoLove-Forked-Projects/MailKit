@@ -25,6 +25,8 @@
 //
 
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 #if SERIALIZABLE
 using System.Security;
@@ -44,12 +46,15 @@ namespace MailKit.Net.Imap {
 #endif
 	public class ImapCommandException : CommandException
 	{
+		static readonly IReadOnlyList<ImapResponseCode> EmptyResponseCodes = new ReadOnlyCollection<ImapResponseCode> (Array.Empty<ImapResponseCode> ());
+
 #if SERIALIZABLE
 		/// <summary>
 		/// Initializes a new instance of the <see cref="MailKit.Net.Imap.ImapCommandException"/> class.
 		/// </summary>
 		/// <remarks>
-		/// Creates a new <see cref="ImapCommandException"/> from the serialized data.
+		/// <para>Creates a new <see cref="ImapCommandException"/> from the serialized data.</para>
+		/// <para>The <see cref="ResponseCodes"/> are not serialized and will be empty.</para>
 		/// </remarks>
 		/// <param name="info">The serialization info.</param>
 		/// <param name="context">The streaming context.</param>
@@ -61,7 +66,7 @@ namespace MailKit.Net.Imap {
 		{
 			Response = (ImapCommandResponse) info.GetValue ("Response", typeof (ImapCommandResponse));
 			ResponseText = info.GetString ("ResponseText");
-			ResponseCode = info.GetString ("ResponseCode");
+			ResponseCodes = EmptyResponseCodes;
 		}
 #endif
 
@@ -77,26 +82,19 @@ namespace MailKit.Net.Imap {
 		internal static ImapCommandException Create (string command, ImapCommand ic)
 		{
 			var result = ic.Response.ToString ().ToUpperInvariant ();
-			ImapResponseCode? code = null;
+			var codes = new List<ImapResponseCode> ();
 			string? reason = null;
 			string message;
 
-			// Prefer the error response code from the tagged response, falling back to the last untagged error response code.
-			for (int i = ic.RespCodes.Count - 1; i >= 0; i--) {
-				if (ic.RespCodes[i].IsError) {
-					if (ic.RespCodes[i].IsTagged) {
-						code = ic.RespCodes[i];
-						break;
-					}
-
-					code ??= ic.RespCodes[i];
-				}
+			for (int i = 0; i < ic.RespCodes.Count; i++) {
+				if (ic.RespCodes[i].IsError)
+					codes.Add (ic.RespCodes[i]);
 			}
 
 			if (string.IsNullOrEmpty (ic.ResponseText)) {
-				for (int i = ic.RespCodes.Count - 1; i >= 0; i--) {
-					if (ic.RespCodes[i].IsError && !string.IsNullOrEmpty (ic.RespCodes[i].Message)) {
-						reason = ic.RespCodes[i].Message;
+				for (int i = codes.Count - 1; i >= 0; i--) {
+					if (!string.IsNullOrEmpty (codes[i].Message)) {
+						reason = codes[i].Message;
 						break;
 					}
 				}
@@ -111,9 +109,7 @@ namespace MailKit.Net.Imap {
 			else
 				message = string.Format ("The IMAP server replied to the '{0}' command with a '{1}' response.", command, result);
 
-			var responseCode = string.IsNullOrEmpty (code?.Atom) ? null : code!.Atom.ToUpperInvariant ();
-
-			return ic.Exception != null ? new ImapCommandException (ic.Response, responseCode, reason, message, ic.Exception) : new ImapCommandException (ic.Response, responseCode, reason, message);
+			return ic.Exception != null ? new ImapCommandException (ic.Response, codes, reason, message, ic.Exception) : new ImapCommandException (ic.Response, codes, reason, message);
 		}
 
 		/// <summary>
@@ -126,8 +122,11 @@ namespace MailKit.Net.Imap {
 		/// <param name="message">The error message.</param>
 		/// <param name="responseText">The human-readable response text.</param>
 		/// <param name="innerException">The inner exception.</param>
-		public ImapCommandException (ImapCommandResponse response, string responseText, string message, Exception innerException) : this (response, null, responseText, message, innerException)
+		public ImapCommandException (ImapCommandResponse response, string responseText, string message, Exception innerException) : base (message, innerException)
 		{
+			ResponseCodes = EmptyResponseCodes;
+			ResponseText = responseText;
+			Response = response;
 		}
 
 		/// <summary>
@@ -137,13 +136,19 @@ namespace MailKit.Net.Imap {
 		/// Creates a new <see cref="ImapCommandException"/>.
 		/// </remarks>
 		/// <param name="response">The IMAP command response.</param>
-		/// <param name="responseCode">The IMAP response code (e.g. <c>"OVERQUOTA"</c>), if any.</param>
+		/// <param name="responseCodes">The error response codes received by the command.</param>
 		/// <param name="responseText">The human-readable response text.</param>
 		/// <param name="message">The error message.</param>
 		/// <param name="innerException">The inner exception.</param>
-		public ImapCommandException (ImapCommandResponse response, string? responseCode, string responseText, string message, Exception innerException) : base (message, innerException)
+		/// <exception cref="System.ArgumentNullException">
+		/// <paramref name="responseCodes"/> is <see langword="null" />.
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="responseCodes"/> contains a <see langword="null" /> response code.
+		/// </exception>
+		public ImapCommandException (ImapCommandResponse response, IEnumerable<ImapResponseCode> responseCodes, string responseText, string message, Exception innerException) : base (message, innerException)
 		{
-			ResponseCode = responseCode;
+			ResponseCodes = CreateResponseCodes (responseCodes);
 			ResponseText = responseText;
 			Response = response;
 		}
@@ -157,8 +162,11 @@ namespace MailKit.Net.Imap {
 		/// <param name="response">The IMAP command response.</param>
 		/// <param name="responseText">The human-readable response text.</param>
 		/// <param name="message">The error message.</param>
-		public ImapCommandException (ImapCommandResponse response, string responseText, string message) : this (response, null, responseText, message)
+		public ImapCommandException (ImapCommandResponse response, string responseText, string message) : base (message)
 		{
+			ResponseCodes = EmptyResponseCodes;
+			ResponseText = responseText;
+			Response = response;
 		}
 
 		/// <summary>
@@ -168,12 +176,18 @@ namespace MailKit.Net.Imap {
 		/// Creates a new <see cref="ImapCommandException"/>.
 		/// </remarks>
 		/// <param name="response">The IMAP command response.</param>
-		/// <param name="responseCode">The IMAP response code (e.g. <c>"OVERQUOTA"</c>), if any.</param>
+		/// <param name="responseCodes">The error response codes received by the command.</param>
 		/// <param name="responseText">The human-readable response text.</param>
 		/// <param name="message">The error message.</param>
-		public ImapCommandException (ImapCommandResponse response, string? responseCode, string responseText, string message) : base (message)
+		/// <exception cref="System.ArgumentNullException">
+		/// <paramref name="responseCodes"/> is <see langword="null" />.
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="responseCodes"/> contains a <see langword="null" /> response code.
+		/// </exception>
+		public ImapCommandException (ImapCommandResponse response, IEnumerable<ImapResponseCode> responseCodes, string responseText, string message) : base (message)
 		{
-			ResponseCode = responseCode;
+			ResponseCodes = CreateResponseCodes (responseCodes);
 			ResponseText = responseText;
 			Response = response;
 		}
@@ -188,10 +202,28 @@ namespace MailKit.Net.Imap {
 		/// <param name="responseText">The human-readable response text.</param>
 		public ImapCommandException (ImapCommandResponse response, string responseText)
 		{
+			ResponseCodes = EmptyResponseCodes;
 			ResponseText = responseText;
 			Response = response;
 		}
 
+		static IReadOnlyList<ImapResponseCode> CreateResponseCodes (IEnumerable<ImapResponseCode> responseCodes)
+		{
+			if (responseCodes is null)
+				throw new ArgumentNullException (nameof (responseCodes));
+
+			var codes = new List<ImapResponseCode> (responseCodes);
+
+			if (codes.Count == 0)
+				return EmptyResponseCodes;
+
+			for (int i = 0; i < codes.Count; i++) {
+				if (codes[i] is null)
+					throw new ArgumentException ("The response codes cannot contain null.", nameof (responseCodes));
+			}
+
+			return new ReadOnlyCollection<ImapResponseCode> (codes);
+		}
 		/// <summary>
 		/// Gets the IMAP command response.
 		/// </summary>
@@ -215,31 +247,56 @@ namespace MailKit.Net.Imap {
 		}
 
 		/// <summary>
-		/// Get the IMAP response code, if any.
+		/// Get the error response codes received by the command.
 		/// </summary>
 		/// <remarks>
-		/// <para>Gets the IMAP response code that the server included in its error response, if any.</para>
+		/// <para>Gets the error response codes (such as <c>[OVERQUOTA]</c> or <c>[TRYCREATE]</c>) that
+		/// the server included in the tagged and untagged responses to the command, in the order that
+		/// they were received.</para>
 		/// <para>Response codes are defined by various IMAP specifications such as
 		/// <a href="https://tools.ietf.org/html/rfc3501">rfc3501</a> and
-		/// <a href="https://tools.ietf.org/html/rfc5530">rfc5530</a> and include values such as
-		/// <c>"OVERQUOTA"</c>, <c>"NONEXISTENT"</c> or <c>"INUSE"</c>.</para>
+		/// <a href="https://tools.ietf.org/html/rfc5530">rfc5530</a>. Response codes that carry
+		/// additional data are represented by subclasses of <see cref="ImapResponseCode"/>, such as
+		/// <see cref="BadUrlResponseCode"/>.</para>
 		/// </remarks>
-		/// <value>The upper-case response code or <see langword="null" /> if the server did not include an error response code.</value>
-		public string? ResponseCode {
+		/// <value>The error response codes. If the server did not include any error response codes, the list is empty.</value>
+		public IReadOnlyList<ImapResponseCode> ResponseCodes {
 			get; private set;
+		}
+
+		ImapResponseCode? GetPrimaryErrorCode ()
+		{
+			ImapResponseCode? code = null;
+
+			// Prefer the error response code from the tagged response, falling back to the last untagged error response code.
+			for (int i = ResponseCodes.Count - 1; i >= 0; i--) {
+				if (ResponseCodes[i].IsError) {
+					if (ResponseCodes[i].IsTagged)
+						return ResponseCodes[i];
+
+					code ??= ResponseCodes[i];
+				}
+			}
+
+			return code;
 		}
 
 		/// <summary>
 		/// Get the type of command error.
 		/// </summary>
 		/// <remarks>
-		/// Gets the type of command error based on the <see cref="ResponseCode"/> and the <see cref="Response"/>.
+		/// <para>Gets the type of command error based on the <see cref="ResponseCodes"/> and the <see cref="Response"/>.</para>
+		/// <para>If the tagged response contained an error response code, that response code determines the
+		/// type of error. Otherwise, the last untagged error response code is used. If neither is
+		/// recognized, the type of error is determined by the <see cref="Response"/>.</para>
 		/// </remarks>
 		/// <value>The type of command error.</value>
 		public override CommandErrorType ErrorType {
 			get {
-				if (ResponseCode != null) {
-					switch (ImapEngine.GetResponseCodeType (ResponseCode)) {
+				var code = GetPrimaryErrorCode ();
+
+				if (code != null) {
+					switch (code.Type) {
 					case ImapResponseCodeType.CanNot:
 					case ImapResponseCodeType.UnknownCte:
 					case ImapResponseCodeType.BadCharset:
@@ -295,7 +352,7 @@ namespace MailKit.Net.Imap {
 		/// with information about the exception.
 		/// </summary>
 		/// <remarks>
-		/// Serializes the state of the <see cref="FolderNotFoundException"/>.
+		/// Serializes the state of the <see cref="ImapCommandException"/>.
 		/// </remarks>
 		/// <param name="info">The serialization info.</param>
 		/// <param name="context">The streaming context.</param>
@@ -309,7 +366,6 @@ namespace MailKit.Net.Imap {
 
 			info.AddValue ("Response", Response, typeof (ImapCommandResponse));
 			info.AddValue ("ResponseText", ResponseText);
-			info.AddValue ("ResponseCode", ResponseCode);
 		}
 #endif
 	}

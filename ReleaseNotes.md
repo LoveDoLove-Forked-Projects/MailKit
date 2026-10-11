@@ -76,10 +76,6 @@ See [PortingGuide.md](PortingGuide.md) for step-by-step instructions on porting 
   or `priv`/`shared` components other than the trailing scope suffix (e.g. `value.priv.priv`).
   Previously, only `*` and `%` were rejected. Attribute specifiers parsed from IMAP server responses
   are not validated.
-* `ImapCommandException` has new
-  `(ImapCommandResponse, string? responseCode, string responseText, string message[, Exception])`
-  constructors. As a result, calls to the existing `(ImapCommandResponse, string, string, Exception)`
-  constructor that pass a `null` literal for the inner exception are now ambiguous and need a cast.
 * Replaced `ImapClient.EnableQuickResync ()`, `ImapClient.EnableUTF8 ()` (and their `Async` variants) with
   new `ImapClient.Enable (ImapFeatures)` and `EnableAsync (ImapFeatures)` methods. `ImapFeatures` is a flags
   enum, so multiple features can be enabled with a single `ENABLE` command, e.g.
@@ -216,11 +212,18 @@ See [PortingGuide.md](PortingGuide.md) for step-by-step instructions on porting 
   `NotFound`, `AlreadyExists`, `QuotaExceeded`, `LimitExceeded`, `InUse`, `TemporaryFailure` or
   `ServerError`), along with a `CommandException.IsTransient` convenience property that is `true` for
   `TemporaryFailure` and `InUse` errors.
-  * `ImapCommandException.ErrorType` is derived from the IMAP response code (RFC 5530 and others),
-    exposed via the new `ImapCommandException.ResponseCode` property.
+  * `ImapCommandException.ErrorType` is derived from the IMAP response codes (RFC 5530 and others),
+    exposed via the new `ImapCommandException.ResponseCodes` property.
   * `Pop3CommandException.ErrorType` is derived from the POP3 extended response code (RFC 2449/3206),
     exposed via the new `Pop3CommandException.ResponseCode` property.
   * `SmtpCommandException.ErrorType` is derived from the SMTP status code.
+* Added an `ImapCommandException.ResponseCodes` property, a read-only list of every error response code
+  (e.g. `[NONEXISTENT]`, `[OVERQUOTA]` or `[BADURL ...]`) received for the failed command, in the order
+  they were received. New `ImapCommandException` constructors take an `IEnumerable<ImapResponseCode>`.
+* Made `ImapResponseCode`, `ImapResponseCodeType` and all of the `ImapResponseCode` subclasses (such as
+  `AppendUidResponseCode`, `CopyUidResponseCode`, `BadUrlResponseCode`, `UndefinedFilterResponseCode`,
+  `WebAlertResponseCode` and `MaxConvertResponseCode`) public. They have public constructors so that
+  `ImapCommandException` instances can be created in unit tests.
 * Added `ImapFeatures.IMAP4rev2` which can be used with `ImapClient.Enable ()` to enable IMAP4rev2 semantics
   on servers that advertise both `IMAP4rev1` and `IMAP4rev2` (rfc9051 Appendix A). Once enabled, `ImapClient`
   uses UTF-8 mailbox names and assumes the extensions implied by IMAP4rev2.

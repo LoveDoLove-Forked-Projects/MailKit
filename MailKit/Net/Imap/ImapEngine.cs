@@ -2055,7 +2055,7 @@ namespace MailKit.Net.Imap {
 				var perm = (PermanentFlagsResponseCode) code;
 
 				UngetToken (token);
-				perm.Flags = ImapUtils.ParseFlagsList (this, "PERMANENTFLAGS", perm.Keywords, cancellationToken);
+				perm.Flags = ImapUtils.ParseFlagsList (this, "PERMANENTFLAGS", perm.KeywordSet, cancellationToken);
 				token = ReadToken (cancellationToken);
 				break;
 			case ImapResponseCodeType.UidNext:
@@ -2141,18 +2141,18 @@ namespace MailKit.Net.Imap {
 				// didn't exist or something? See https://github.com/jstedfast/MailKit/issues/555 for details.
 
 				if (token.Type != ImapTokenType.CloseBracket) {
-					copy.SrcUidSet = ParseUidSet (token, validity, out _, out _, GenericResponseCodeSyntaxErrorFormat, "COPYUID", token);
+					copy.SourceUidSet = ParseUidSet (token, validity, out _, out _, GenericResponseCodeSyntaxErrorFormat, "COPYUID", token);
 				} else {
-					copy.SrcUidSet = new UniqueIdSet ();
+					copy.SourceUidSet = new UniqueIdSet ();
 					UngetToken (token);
 				}
 
 				token = ReadToken (cancellationToken);
 
 				if (token.Type != ImapTokenType.CloseBracket) {
-					copy.DestUidSet = ParseUidSet (token, copy.UidValidity, out _, out _, GenericResponseCodeSyntaxErrorFormat, "COPYUID", token);
+					copy.DestinationUidSet = ParseUidSet (token, copy.UidValidity, out _, out _, GenericResponseCodeSyntaxErrorFormat, "COPYUID", token);
 				} else {
-					copy.DestUidSet = new UniqueIdSet ();
+					copy.DestinationUidSet = new UniqueIdSet ();
 					UngetToken (token);
 				}
 
@@ -2300,7 +2300,8 @@ namespace MailKit.Net.Imap {
 
 				AssertToken (token, ImapTokenType.Atom, GenericResponseCodeSyntaxErrorFormat, "WEBALERT", token);
 
-				Uri.TryCreate ((string) token.Value, UriKind.Absolute, out webalert.WebUri);
+				if (Uri.TryCreate ((string) token.Value, UriKind.Absolute, out var webUri))
+					webalert.WebUri = webUri;
 
 				token = ReadToken (cancellationToken);
 				break;
@@ -2382,7 +2383,7 @@ namespace MailKit.Net.Imap {
 				var perm = (PermanentFlagsResponseCode) code;
 
 				UngetToken (token);
-				perm.Flags = await ImapUtils.ParseFlagsListAsync (this, "PERMANENTFLAGS", perm.Keywords, cancellationToken).ConfigureAwait (false);
+				perm.Flags = await ImapUtils.ParseFlagsListAsync (this, "PERMANENTFLAGS", perm.KeywordSet, cancellationToken).ConfigureAwait (false);
 				token = await ReadTokenAsync (cancellationToken).ConfigureAwait (false);
 				break;
 			case ImapResponseCodeType.UidNext:
@@ -2468,18 +2469,18 @@ namespace MailKit.Net.Imap {
 				// didn't exist or something? See https://github.com/jstedfast/MailKit/issues/555 for details.
 
 				if (token.Type != ImapTokenType.CloseBracket) {
-					copy.SrcUidSet = ParseUidSet (token, validity, out _, out _, GenericResponseCodeSyntaxErrorFormat, "COPYUID", token);
+					copy.SourceUidSet = ParseUidSet (token, validity, out _, out _, GenericResponseCodeSyntaxErrorFormat, "COPYUID", token);
 				} else {
-					copy.SrcUidSet = new UniqueIdSet ();
+					copy.SourceUidSet = new UniqueIdSet ();
 					UngetToken (token);
 				}
 
 				token = await ReadTokenAsync (cancellationToken).ConfigureAwait (false);
 
 				if (token.Type != ImapTokenType.CloseBracket) {
-					copy.DestUidSet = ParseUidSet (token, copy.UidValidity, out _, out _, GenericResponseCodeSyntaxErrorFormat, "COPYUID", token);
+					copy.DestinationUidSet = ParseUidSet (token, copy.UidValidity, out _, out _, GenericResponseCodeSyntaxErrorFormat, "COPYUID", token);
 				} else {
-					copy.DestUidSet = new UniqueIdSet ();
+					copy.DestinationUidSet = new UniqueIdSet ();
 					UngetToken (token);
 				}
 
@@ -2627,7 +2628,8 @@ namespace MailKit.Net.Imap {
 
 				AssertToken (token, ImapTokenType.Atom, GenericResponseCodeSyntaxErrorFormat, "WEBALERT", token);
 
-				Uri.TryCreate ((string) token.Value, UriKind.Absolute, out webalert.WebUri);
+				if (Uri.TryCreate ((string) token.Value, UriKind.Absolute, out var webUri))
+					webalert.WebUri = webUri;
 
 				token = await ReadTokenAsync (cancellationToken).ConfigureAwait (false);
 				break;

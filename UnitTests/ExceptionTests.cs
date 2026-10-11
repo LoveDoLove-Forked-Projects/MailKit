@@ -143,7 +143,8 @@ namespace UnitTests {
 		{
 			// Note: an OK response with no response code results in CommandErrorType.Unknown.
 			var response = responseCode != null ? ImapCommandResponse.No : ImapCommandResponse.Ok;
-			var ex = new ImapCommandException (response, responseCode, "response text", "message");
+			var codes = responseCode != null ? new [] { new ImapResponseCode (responseCode, true, "response text") } : Array.Empty<ImapResponseCode> ();
+			var ex = new ImapCommandException (response, codes, "response text", "message");
 
 			Assert.That (ClientMetrics.TryGetErrorType (ex, out var value), Is.True);
 			Assert.That (value, Is.EqualTo (expected));
