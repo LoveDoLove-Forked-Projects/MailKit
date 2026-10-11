@@ -1383,161 +1383,154 @@ namespace MailKit.Net.Imap {
 			I18NLevel = 0;
 		}
 
+		static readonly Dictionary<string, ImapCapability> CapabilityAtoms = new Dictionary<string, ImapCapability> (StringComparer.OrdinalIgnoreCase) {
+			{ "ACL", ImapCapability.Acl },
+			{ "ANNOTATE-EXPERIMENT-1", ImapCapability.Annotate },
+			{ "APPENDLIMIT", ImapCapability.AppendLimit },
+			{ "BINARY", ImapCapability.Binary },
+			{ "CATENATE", ImapCapability.Catenate },
+			{ "CHILDREN", ImapCapability.Children },
+			{ "CONDSTORE", ImapCapability.CondStore },
+			{ "CONVERT", ImapCapability.Convert },
+			{ "CREATE-SPECIAL-USE", ImapCapability.CreateSpecialUse },
+			{ "ENABLE", ImapCapability.Enable },
+			{ "ESEARCH", ImapCapability.ESearch },
+			{ "ESORT", ImapCapability.ESort },
+			{ "FILTERS", ImapCapability.Filters },
+			{ "ID", ImapCapability.Id },
+			{ "IDLE", ImapCapability.Idle },
+			{ "IMAP4", ImapCapability.IMAP4 },
+			{ "IMAP4REV1", ImapCapability.IMAP4rev1 },
+			{ "IMAP4REV2", ImapCapability.IMAP4rev2 },
+			{ "INPROGRESS", ImapCapability.InProgress },
+			{ "JMAPACCESS", ImapCapability.JmapAccess },
+			{ "LANGUAGE", ImapCapability.Language },
+			{ "LIST-EXTENDED", ImapCapability.ListExtended },
+			{ "LIST-METADATA", ImapCapability.ListMetadata },
+			{ "LIST-MYRIGHTS", ImapCapability.ListMyRights },
+			{ "LIST-STATUS", ImapCapability.ListStatus },
+			{ "LITERAL+", ImapCapability.LiteralPlus },
+			{ "LITERAL-", ImapCapability.LiteralMinus },
+			{ "LOGIN-REFERRALS", ImapCapability.LoginReferrals },
+			{ "LOGINDISABLED", ImapCapability.LoginDisabled },
+			{ "MAILBOX-REFERRALS", ImapCapability.MailboxReferrals },
+			{ "METADATA", ImapCapability.Metadata },
+			{ "METADATA-SERVER", ImapCapability.MetadataServer },
+			{ "MOVE", ImapCapability.Move },
+			{ "MULTIAPPEND", ImapCapability.MultiAppend },
+			{ "MULTISEARCH", ImapCapability.MultiSearch },
+			{ "NAMESPACE", ImapCapability.Namespace },
+			{ "NOTIFY", ImapCapability.Notify },
+			{ "OBJECTID", ImapCapability.ObjectID },
+			{ "PARTIAL", ImapCapability.Partial },
+			{ "PREVIEW", ImapCapability.Preview },
+			{ "QRESYNC", ImapCapability.QuickResync },
+			{ "QUOTA", ImapCapability.Quota },
+			{ "QUOTA=RES-ANNOTATION-STORAGE", ImapCapability.QuotaResourceAnnotationStorage },
+			{ "QUOTA=RES-MAILBOX", ImapCapability.QuotaResourceMailbox },
+			{ "QUOTA=RES-MESSAGE", ImapCapability.QuotaResourceMessage },
+			{ "QUOTA=RES-STORAGE", ImapCapability.QuotaResourceStorage },
+			{ "QUOTASET", ImapCapability.QuotaSet },
+			{ "REPLACE", ImapCapability.Replace },
+			{ "SASL-IR", ImapCapability.SaslIR },
+			{ "SAVEDATE", ImapCapability.SaveDate },
+			{ "SEARCH=FUZZY", ImapCapability.FuzzySearch },
+			{ "SEARCHRES", ImapCapability.SearchResults },
+			{ "SORT", ImapCapability.Sort },
+			{ "SORT=DISPLAY", ImapCapability.SortDisplay },
+			{ "SPECIAL-USE", ImapCapability.SpecialUse },
+			{ "STARTTLS", ImapCapability.StartTLS },
+			{ "STATUS", ImapCapability.Status },
+			{ "STATUS=SIZE", ImapCapability.StatusSize },
+			{ "UIDBATCHES", ImapCapability.UidBatches },
+			{ "UIDONLY", ImapCapability.UidOnly },
+			{ "UIDPLUS", ImapCapability.UidPlus },
+			{ "UNAUTHENTICATE", ImapCapability.Unauthenticate },
+			{ "UNSELECT", ImapCapability.Unselect },
+			{ "URL-PARTIAL", ImapCapability.UrlPartial },
+			{ "URLAUTH", ImapCapability.UrlAuth },
+			{ "URLAUTH=BINARY", ImapCapability.UrlAuthBinary },
+			{ "UTF8=ACCEPT", ImapCapability.UTF8Accept },
+			{ "UTF8=ONLY", ImapCapability.UTF8Only },
+			{ "WITHIN", ImapCapability.Within },
+			{ "X-GM-EXT-1", ImapCapability.GMailExt1 },
+			{ "XLIST", ImapCapability.XList },
+		};
+
+		static bool IsCapabilityKey (string atom, int keyLength, string key)
+		{
+			return keyLength == key.Length && string.Compare (atom, 0, key, 0, keyLength, StringComparison.OrdinalIgnoreCase) == 0;
+		}
+
+		static bool IsCapabilityValue (string atom, int valueIndex, string value)
+		{
+			return atom.Length - valueIndex == value.Length && string.Compare (atom, valueIndex, value, 0, value.Length, StringComparison.OrdinalIgnoreCase) == 0;
+		}
+
 		void ProcessCapabilityToken (string atom)
 		{
 			Capabilities.AddName (atom);
 
-			if (atom.StartsWith ("AUTH=", StringComparison.OrdinalIgnoreCase)) {
-				AuthenticationMechanisms.Add (atom.Substring ("AUTH=".Length));
-			} else if (atom.StartsWith ("APPENDLIMIT", StringComparison.OrdinalIgnoreCase)) {
-				if (atom.Length >= "APPENDLIMIT".Length) {
-					if (atom.Length >= "APPENDLIMIT=".Length && TryParseUInt32 (atom, "APPENDLIMIT=".Length, out uint limit))
-						AppendLimit = limit;
+			if (CapabilityAtoms.TryGetValue (atom, out var capability)) {
+				Capabilities.Add (capability);
 
-					Capabilities.Add (ImapCapability.AppendLimit);
-				}
-			} else if (atom.StartsWith ("COMPRESS=", StringComparison.OrdinalIgnoreCase)) {
-				CompressionAlgorithms.Add (atom.Substring ("COMPRESS=".Length));
+				if (capability == ImapCapability.GMailExt1)
+					QuirksMode = ImapQuirksMode.GMail;
+
+				return;
+			}
+
+			int keyLength = atom.IndexOf ('=');
+
+			if (keyLength == -1) {
+				if (atom.Equals ("XAPPLEPUSHSERVICE", StringComparison.OrdinalIgnoreCase))
+					QuirksMode = ImapQuirksMode.iCloud;
+				else if (atom.Equals ("XSTOP", StringComparison.OrdinalIgnoreCase))
+					QuirksMode = ImapQuirksMode.ProtonMail;
+				else if (atom.Equals ("XYMHIGHESTMODSEQ", StringComparison.OrdinalIgnoreCase))
+					QuirksMode = ImapQuirksMode.Yahoo;
+
+				return;
+			}
+
+			int valueIndex = keyLength + 1;
+
+			if (valueIndex == atom.Length)
+				return;
+
+			if (IsCapabilityKey (atom, keyLength, "APPENDLIMIT")) {
+				if (TryParseUInt32 (atom, valueIndex, out uint limit))
+					AppendLimit = limit;
+
+				Capabilities.Add (ImapCapability.AppendLimit);
+			} else if (IsCapabilityKey (atom, keyLength, "AUTH")) {
+				AuthenticationMechanisms.Add (atom.Substring (valueIndex));
+			} else if (IsCapabilityKey (atom, keyLength, "COMPRESS")) {
+				CompressionAlgorithms.Add (atom.Substring (valueIndex));
 				Capabilities.Add (ImapCapability.Compress);
-			} else if (atom.StartsWith ("CONTEXT=", StringComparison.OrdinalIgnoreCase)) {
-				SupportedContexts.Add (atom.Substring ("CONTEXT=".Length));
+			} else if (IsCapabilityKey (atom, keyLength, "CONTEXT")) {
+				SupportedContexts.Add (atom.Substring (valueIndex));
 				Capabilities.Add (ImapCapability.Context);
-			} else if (atom.StartsWith ("I18NLEVEL=", StringComparison.OrdinalIgnoreCase)) {
-				if (TryParseUInt32 (atom, "I18NLEVEL=".Length, out uint level))
+			} else if (IsCapabilityKey (atom, keyLength, "I18NLEVEL")) {
+				if (TryParseUInt32 (atom, valueIndex, out uint level))
 					I18NLevel = (int) level;
 
 				Capabilities.Add (ImapCapability.I18NLevel);
-			} else if (atom.StartsWith ("RIGHTS=", StringComparison.OrdinalIgnoreCase)) {
-				var rights = atom.Substring ("RIGHTS=".Length);
-				Rights.AddRange (rights);
-			} else if (atom.StartsWith ("THREAD=", StringComparison.OrdinalIgnoreCase)) {
-				if (string.Compare ("ORDEREDSUBJECT", 0, atom, "THREAD=".Length, "ORDEREDSUBJECT".Length, StringComparison.OrdinalIgnoreCase) == 0)
+			} else if (IsCapabilityKey (atom, keyLength, "IMAPSIEVE")) {
+				Capabilities.Add (ImapCapability.ImapSieve);
+			} else if (IsCapabilityKey (atom, keyLength, "MESSAGELIMIT")) {
+				Capabilities.Add (ImapCapability.MessageLimit);
+			} else if (IsCapabilityKey (atom, keyLength, "RIGHTS")) {
+				Rights.AddRange (atom.Substring (valueIndex));
+			} else if (IsCapabilityKey (atom, keyLength, "SAVELIMIT")) {
+				Capabilities.Add (ImapCapability.SaveLimit);
+			} else if (IsCapabilityKey (atom, keyLength, "THREAD")) {
+				if (IsCapabilityValue (atom, valueIndex, "ORDEREDSUBJECT"))
 					ThreadingAlgorithms.Add (ThreadingAlgorithm.OrderedSubject);
-				else if (string.Compare ("REFERENCES", 0, atom, "THREAD=".Length, "REFERENCES".Length, StringComparison.OrdinalIgnoreCase) == 0)
+				else if (IsCapabilityValue (atom, valueIndex, "REFERENCES"))
 					ThreadingAlgorithms.Add (ThreadingAlgorithm.References);
 
 				Capabilities.Add (ImapCapability.Thread);
-			} else if (atom.Equals ("IMAP4", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.IMAP4);
-			} else if (atom.Equals ("IMAP4REV1", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.IMAP4rev1);
-			} else if (atom.Equals ("IMAP4REV2", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.IMAP4rev2);
-			} else if (atom.Equals ("STATUS", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Status);
-			} else if (atom.Equals ("ACL", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Acl);
-			} else if (atom.Equals ("QUOTA", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Quota);
-			} else if (atom.Equals ("LITERAL+", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.LiteralPlus);
-			} else if (atom.Equals ("IDLE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Idle);
-			} else if (atom.Equals ("MAILBOX-REFERRALS", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.MailboxReferrals);
-			} else if (atom.Equals ("LOGIN-REFERRALS", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.LoginReferrals);
-			} else if (atom.Equals ("NAMESPACE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Namespace);
-			} else if (atom.Equals ("ID", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Id);
-			} else if (atom.Equals ("CHILDREN", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Children);
-			} else if (atom.Equals ("LOGINDISABLED", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.LoginDisabled);
-			} else if (atom.Equals ("STARTTLS", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.StartTLS);
-			} else if (atom.Equals ("MULTIAPPEND", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.MultiAppend);
-			} else if (atom.Equals ("BINARY", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Binary);
-			} else if (atom.Equals ("UNSELECT", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Unselect);
-			} else if (atom.Equals ("UIDPLUS", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.UidPlus);
-			} else if (atom.Equals ("CATENATE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Catenate);
-			} else if (atom.Equals ("CONDSTORE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.CondStore);
-			} else if (atom.Equals ("ESEARCH", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.ESearch);
-			} else if (atom.Equals ("SASL-IR", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.SaslIR);
-			} else if (atom.Equals ("WITHIN", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Within);
-			} else if (atom.Equals ("ENABLE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Enable);
-			} else if (atom.Equals ("QRESYNC", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.QuickResync);
-			} else if (atom.Equals ("SEARCHRES", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.SearchResults);
-			} else if (atom.Equals ("SORT", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Sort);
-			} else if (atom.Equals ("ANNOTATE-EXPERIMENT-1", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Annotate);
-			} else if (atom.Equals ("LIST-EXTENDED", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.ListExtended);
-			} else if (atom.Equals ("CONVERT", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Convert);
-			} else if (atom.Equals ("LANGUAGE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Language);
-			} else if (atom.Equals ("ESORT", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.ESort);
-			} else if (atom.Equals ("METADATA", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Metadata);
-			} else if (atom.Equals ("METADATA-SERVER", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.MetadataServer);
-			} else if (atom.Equals ("NOTIFY", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Notify);
-			} else if (atom.Equals ("FILTERS", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Filters);
-			} else if (atom.Equals ("LIST-STATUS", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.ListStatus);
-			} else if (atom.Equals ("SORT=DISPLAY", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.SortDisplay);
-			} else if (atom.Equals ("CREATE-SPECIAL-USE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.CreateSpecialUse);
-			} else if (atom.Equals ("SPECIAL-USE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.SpecialUse);
-			} else if (atom.Equals ("SEARCH=FUZZY", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.FuzzySearch);
-			} else if (atom.Equals ("MULTISEARCH", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.MultiSearch);
-			} else if (atom.Equals ("MOVE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Move);
-			} else if (atom.Equals ("UTF8=ACCEPT", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.UTF8Accept);
-			} else if (atom.Equals ("UTF8=ONLY", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.UTF8Only);
-			} else if (atom.Equals ("LITERAL-", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.LiteralMinus);
-			} else if (atom.Equals ("UNAUTHENTICATE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Unauthenticate);
-			} else if (atom.Equals ("STATUS=SIZE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.StatusSize);
-			} else if (atom.Equals ("LIST-MYRIGHTS", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.ListMyRights);
-			} else if (atom.Equals ("OBJECTID", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.ObjectID);
-			} else if (atom.Equals ("REPLACE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Replace);
-			} else if (atom.Equals ("SAVEDATE", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.SaveDate);
-			} else if (atom.Equals ("PREVIEW", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Preview);
-			} else if (atom.Equals ("PARTIAL", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.Partial);
-			} else if (atom.Equals ("XLIST", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.XList);
-			} else if (atom.Equals ("X-GM-EXT-1", StringComparison.OrdinalIgnoreCase)) {
-				Capabilities.Add (ImapCapability.GMailExt1);
-				QuirksMode = ImapQuirksMode.GMail;
-			} else if (atom.Equals ("XSTOP", StringComparison.OrdinalIgnoreCase)) {
-				QuirksMode = ImapQuirksMode.ProtonMail;
-			} else if (atom.Equals ("XAPPLEPUSHSERVICE", StringComparison.OrdinalIgnoreCase)) {
-				QuirksMode = ImapQuirksMode.iCloud;
-			} else if (atom.Equals ("XYMHIGHESTMODSEQ", StringComparison.OrdinalIgnoreCase)) {
-				QuirksMode = ImapQuirksMode.Yahoo;
 			}
 		}
 

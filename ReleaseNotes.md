@@ -226,6 +226,12 @@ See [PortingGuide.md](PortingGuide.md) for step-by-step instructions on porting 
   `AppendUidResponseCode`, `CopyUidResponseCode`, `BadUrlResponseCode`, `UndefinedFilterResponseCode`,
   `WebAlertResponseCode` and `MaxConvertResponseCode`) public. They have public constructors so that
   `ImapCommandException` instances can be created in unit tests.
+* Added `ImapCapability` values for more IMAP extensions, and `ImapClient` now detects them:
+  `URLAUTH` (rfc4467), `URLAUTH=BINARY` (rfc5524), `URL-PARTIAL` (rfc5550), `IMAPSIEVE` (rfc6785),
+  `QUOTASET` and `QUOTA=RES-*` (rfc9208), `INPROGRESS` (rfc9585), `UIDONLY` (rfc9586),
+  `LIST-METADATA` (rfc9590), `JMAPACCESS` (rfc9698), `MESSAGELIMIT` and `SAVELIMIT` (rfc9738)
+  and `UIDBATCHES` (rfc10022). MailKit doesn't use these extensions itself yet. Advertised values,
+  such as the `MESSAGELIMIT` limit, can be read with `client.Capabilities.GetValues ("MESSAGELIMIT")`.
 * Added `ImapIdleSession`, created with `ImapClient.CreateIdleSession ()`, which waits for changes to the
   selected folder without having to manage the `IDLE` command manually:
   * `WaitForChanges ()`/`WaitForChangesAsync ()` return an `ImapIdleChanges` batch of events

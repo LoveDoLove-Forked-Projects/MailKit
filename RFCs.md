@@ -64,6 +64,7 @@ The following IETF specifications define the IMAP, POP3 and SMTP protocols:
 * [4314](https://tools.ietf.org/html/rfc4314): IMAP4 Access Control List (ACL) Extension (Obsoletes rfc2086)
 * [4315](https://tools.ietf.org/html/rfc4315): Internet Message Access Protocol (IMAP) - UIDPLUS extension (Obsoletes rfc2359)
 * [4466](https://tools.ietf.org/html/rfc4466): Collected Extensions to IMAP4 ABNF (Updates rfc2088, rfc2342, rfc3501, rfc3502, rfc3516)
+* [4467](https://tools.ietf.org/html/rfc4467): Internet Message Access Protocol (IMAP) - URLAUTH Extension
 * [4469](https://tools.ietf.org/html/rfc4469): Internet Message Access Protocol (IMAP) CATENATE Extension (Updates rfc3501, rfc3502)
 * [4505](https://tools.ietf.org/html/rfc4505): Anonymous Simple Authentication and Security Layer (SASL) Mechanism (Obsoletes rfc2245)
 * [4551](https://tools.ietf.org/html/rfc4551): IMAP Extension for Conditional STORE Operation or Quick Flag Changes Resynchronization (Updates rfc3501)
@@ -87,7 +88,9 @@ The following IETF specifications define the IMAP, POP3 and SMTP protocols:
 * [5464](https://tools.ietf.org/html/rfc5464): The IMAP METADATA Extension
 * [5465](https://tools.ietf.org/html/rfc5465): The IMAP NOTIFY Extension (Updates rfc5267)
 * [5466](https://tools.ietf.org/html/rfc5466): IMAP4 Extension for Named Searches (Filters)
+* [5524](https://tools.ietf.org/html/rfc5524): Extended URLFETCH for Binary and Converted Parts
 * [5530](https://tools.ietf.org/html/rfc5530): IMAP Response Codes
+* [5550](https://tools.ietf.org/html/rfc5550): The Internet Email to Support Diverse Service Environments (Lemonade) Profile (Updates rfc4467, rfc4469)
 * [5721](https://tools.ietf.org/html/rfc5721): POP3 Support for UTF-8
 * [5738](https://tools.ietf.org/html/rfc5738): IMAP Support for UTF-8 (Updates rfc3501)
 * [5788](https://tools.ietf.org/html/rfc5788): IMAP4 Keyword Registry
@@ -99,6 +102,7 @@ The following IETF specifications define the IMAP, POP3 and SMTP protocols:
 * [6203](https://tools.ietf.org/html/rfc6203): IMAP4 Extension for Fuzzy Search
 * [6237](https://tools.ietf.org/html/rfc6237): IMAP4 Multimailbox SEARCH Extension (Obsoletes rfc4466)
 * [6531](https://tools.ietf.org/html/rfc6531): SMTP Extension for Internationalized Email (Obsoletes rfc5336)
+* [6785](https://tools.ietf.org/html/rfc6785): Support for Internet Message Access Protocol (IMAP) Events in Sieve
 * [6851](https://tools.ietf.org/html/rfc6851): Internet Message Access Protocol (IMAP) - MOVE Extension
 * [6855](https://tools.ietf.org/html/rfc6855): IMAP Support for UTF-8 (Obsoletes rfc5738)
 * [6856](https://tools.ietf.org/html/rfc6856): Post Office Protocol Version 3 (POP3) Support for UTF-8 (Obsoletes rfc5721)
@@ -120,3 +124,10 @@ The following IETF specifications define the IMAP, POP3 and SMTP protocols:
 * [9051](https://tools.ietf.org/html/rfc9051): Internet Message Access Protocol (IMAP) - Version 4rev2
 * [9208](https://tools.ietf.org/html/rfc9208): IMAP QUOTA Extension (Obsoletes rfc2087)
 * [9394](https://tools.ietf.org/html/rfc9394): IMAP PARTIAL Extension for Paged SEARCH and FETCH
+* [9585](https://tools.ietf.org/html/rfc9585): IMAP Response Code for Command Progress Notifications
+* [9586](https://tools.ietf.org/html/rfc9586): IMAP Extension for Using and Returning Unique Identifiers (UIDs) Only
+* [9590](https://tools.ietf.org/html/rfc9590): IMAP Extension for Returning Mailbox METADATA in Extended LIST
+* [9698](https://tools.ietf.org/html/rfc9698): The JMAPACCESS Extension for IMAP
+* [9738](https://tools.ietf.org/html/rfc9738): IMAP MESSAGELIMIT Extension
+* [9755](https://tools.ietf.org/html/rfc9755): IMAP Support for UTF-8 (Obsoletes rfc6855)
+* [10022](https://tools.ietf.org/html/rfc10022): IMAP UIDBATCHES Extension

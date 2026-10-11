@@ -24,8 +24,10 @@
 // THE SOFTWARE.
 //
 
-// https://datatracker.ietf.org/doc/search/?name=IMAP&rfcs=on&activedrafts=on&by=group
-// TODO: rfc9208
+// https://www.iana.org/assignments/imap-capabilities/imap-capabilities.xhtml
+//
+// Note: The values are grouped by the RFC that first defined the capability and sorted by RFC number,
+// followed by non-standard extensions. The values must remain sequential, starting at 0 (see ImapCapabilities).
 
 namespace MailKit.Net.Imap {
 	/// <summary>
@@ -43,315 +45,407 @@ namespace MailKit.Net.Imap {
 		/// <summary>
 		/// The server implements the core IMAP4 commands.
 		/// </summary>
-		IMAP4            = 0,
+		IMAP4                          = 0,
 
 		/// <summary>
 		/// The server implements the core IMAP4rev1 commands.
 		/// </summary>
-		IMAP4rev1        = 1,
-
-		/// <summary>
-		/// The server implements the core IMAP4rev2 commands described in <a href="https://tools.ietf.org/html/rfc9051">rfc9051</a>.
-		/// </summary>
-		IMAP4rev2        = 2,
+		IMAP4rev1                      = 1,
 
 		/// <summary>
 		/// The server supports the <c>STATUS</c> command.
 		/// </summary>
-		Status           = 3,
+		Status                         = 2,
 
 		/// <summary>
 		/// The server supports the ACL extension defined in <a href="https://tools.ietf.org/html/rfc2086">rfc2086</a>
 		/// and <a href="https://tools.ietf.org/html/rfc4314">rfc4314</a>.
 		/// </summary>
-		Acl              = 4,
+		Acl                            = 3,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc2087">QUOTA</a> extension.
 		/// </summary>
-		Quota            = 5,
+		Quota                          = 4,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc2088">LITERAL+</a> extension.
 		/// </summary>
-		LiteralPlus      = 6,
+		LiteralPlus                    = 5,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc2177">IDLE</a> extension.
 		/// </summary>
-		Idle             = 7,
+		Idle                           = 6,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc2193">MAILBOX-REFERRALS</a> extension.
 		/// </summary>
-		MailboxReferrals = 8,
+		MailboxReferrals               = 7,
 
 		/// <summary>
 		/// the server supports the <a href="https://tools.ietf.org/html/rfc2221">LOGIN-REFERRALS</a> extension.
 		/// </summary>
-		LoginReferrals   = 9,
+		LoginReferrals                 = 8,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc2342">NAMESPACE</a> extension.
 		/// </summary>
-		Namespace        = 10,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc2971">ID</a> extension.
-		/// </summary>
-		Id               = 11,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc3348">CHILDREN</a> extension.
-		/// </summary>
-		Children         = 12,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc3501">LOGINDISABLED</a> extension.
-		/// </summary>
-		LoginDisabled    = 13,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc3501">STARTTLS</a> extension.
-		/// </summary>
-		StartTLS         = 14,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc3502">MULTIAPPEND</a> extension.
-		/// </summary>
-		MultiAppend      = 15,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc3516">BINARY</a> content extension.
-		/// </summary>
-		Binary           = 16,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc3691">UNSELECT</a> extension.
-		/// </summary>
-		Unselect         = 17,
+		Namespace                      = 9,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc4315">UIDPLUS</a> extension.
 		/// </summary>
-		UidPlus          = 18,
+		UidPlus                        = 10,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc3501">STARTTLS</a> extension.
+		/// </summary>
+		StartTLS                       = 11,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc3501">LOGINDISABLED</a> extension.
+		/// </summary>
+		LoginDisabled                  = 12,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc2971">ID</a> extension.
+		/// </summary>
+		Id                             = 13,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc3348">CHILDREN</a> extension.
+		/// </summary>
+		Children                       = 14,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc3502">MULTIAPPEND</a> extension.
+		/// </summary>
+		MultiAppend                    = 15,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc3516">BINARY</a> content extension.
+		/// </summary>
+		Binary                         = 16,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc3691">UNSELECT</a> extension.
+		/// </summary>
+		Unselect                       = 17,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc4467">URLAUTH</a> extension.
+		/// </summary>
+		UrlAuth                        = 18,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc4469">CATENATE</a> extension.
 		/// </summary>
-		Catenate         = 19,
+		Catenate                       = 19,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc4551">CONDSTORE</a> extension.
 		/// </summary>
-		CondStore        = 20,
+		CondStore                      = 20,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc4731">ESEARCH</a> extension.
 		/// </summary>
-		ESearch          = 21,
+		ESearch                        = 21,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc4959">SASL-IR</a> extension.
 		/// </summary>
-		SaslIR           = 22,
+		SaslIR                         = 22,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc4978">COMPRESS</a> extension.
 		/// </summary>
-		Compress         = 23,
+		Compress                       = 23,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5032">WITHIN</a> extension.
 		/// </summary>
-		Within           = 24,
+		Within                         = 24,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5161">ENABLE</a> extension.
 		/// </summary>
-		Enable           = 25,
+		Enable                         = 25,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5162">QRESYNC</a> extension.
 		/// </summary>
-		QuickResync      = 26,
+		QuickResync                    = 26,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5182">SEARCHRES</a> extension.
 		/// </summary>
-		SearchResults    = 27,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc5256">SORT</a> extension.
-		/// </summary>
-		Sort             = 28,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc5256">THREAD</a> extension.
-		/// </summary>
-		Thread           = 29,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc5257">ANNOTATE</a> extension.
-		/// </summary>
-		Annotate         = 30,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc5258">LIST-EXTENDED</a> extension.
-		/// </summary>
-		ListExtended     = 31,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc5259">CONVERT</a> extension.
-		/// </summary>
-		Convert          = 32,
+		SearchResults                  = 27,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5255">LANGUAGE</a> extension.
 		/// </summary>
-		Language         = 33,
+		Language                       = 28,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5255">I18NLEVEL</a> extension.
 		/// </summary>
-		I18NLevel        = 34,
+		I18NLevel                      = 29,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc5256">SORT</a> extension.
+		/// </summary>
+		Sort                           = 30,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc5256">THREAD</a> extension.
+		/// </summary>
+		Thread                         = 31,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc5257">ANNOTATE</a> extension.
+		/// </summary>
+		Annotate                       = 32,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc5258">LIST-EXTENDED</a> extension.
+		/// </summary>
+		ListExtended                   = 33,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc5259">CONVERT</a> extension.
+		/// </summary>
+		Convert                        = 34,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5267">ESORT</a> extension.
 		/// </summary>
-		ESort            = 35,
+		ESort                          = 35,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5267">CONTEXT</a> extension.
 		/// </summary>
-		Context          = 36,
+		Context                        = 36,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5464">METADATA</a> extension.
 		/// </summary>
-		Metadata         = 37,
+		Metadata                       = 37,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5464">METADATA-SERVER</a> extension.
 		/// </summary>
-		MetadataServer   = 38,
+		MetadataServer                 = 38,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5465">NOTIFY</a> extension.
 		/// </summary>
-		Notify           = 39,
+		Notify                         = 39,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5466">FILTERS</a> extension.
 		/// </summary>
-		Filters          = 40,
+		Filters                        = 40,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc5524">URLAUTH=BINARY</a> extension.
+		/// </summary>
+		UrlAuthBinary                  = 41,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc5550">URL-PARTIAL</a> extension.
+		/// </summary>
+		UrlPartial                     = 42,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5819">LIST-STATUS</a> extension.
 		/// </summary>
-		ListStatus       = 41,
+		ListStatus                     = 43,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc5957">SORT=DISPLAY</a> extension.
 		/// </summary>
-		SortDisplay      = 42,
-
-		/// <summary>
-		/// The server supports the <a href="https://tools.ietf.org/html/rfc6154">CREATE-SPECIAL-USE</a> extension.
-		/// </summary>
-		CreateSpecialUse = 43,
+		SortDisplay                    = 44,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc6154">SPECIAL-USE</a> extension.
 		/// </summary>
-		SpecialUse       = 44,
+		SpecialUse                     = 45,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc6154">CREATE-SPECIAL-USE</a> extension.
+		/// </summary>
+		CreateSpecialUse               = 46,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc6203">SEARCH=FUZZY</a> extension.
 		/// </summary>
-		FuzzySearch      = 45,
+		FuzzySearch                    = 47,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc6237">MULTISEARCH</a> extension.
 		/// </summary>
-		MultiSearch      = 46,
+		MultiSearch                    = 48,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc6785">IMAPSIEVE</a> extension.
+		/// </summary>
+		/// <remarks>
+		/// The advertised value can be obtained using <see cref="ImapCapabilities.GetValues(string)"/>
+		/// with a key of <c>"IMAPSIEVE"</c>.
+		/// </remarks>
+		ImapSieve                      = 49,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc6851">MOVE</a> extension.
 		/// </summary>
-		Move             = 47,
+		Move                           = 50,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc6855">UTF8=ACCEPT</a> extension.
 		/// </summary>
-		UTF8Accept       = 48,
+		UTF8Accept                     = 51,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc6855">UTF8=ONLY</a> extension.
 		/// </summary>
-		UTF8Only         = 49,
+		UTF8Only                       = 52,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc7888">LITERAL-</a> extension.
 		/// </summary>
-		LiteralMinus     = 50,
+		LiteralMinus                   = 53,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc7889">APPENDLIMIT</a> extension.
 		/// </summary>
-		AppendLimit      = 51,
+		AppendLimit                    = 54,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc8437">UNAUTHENTICATE</a> extension.
 		/// </summary>
-		Unauthenticate   = 52,
+		Unauthenticate                 = 55,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc8438">STATUS=SIZE</a> extension.
 		/// </summary>
-		StatusSize       = 53,
+		StatusSize                     = 56,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc8440">LIST-MYRIGHTS</a> extension.
 		/// </summary>
-		ListMyRights     = 54,
+		ListMyRights                   = 57,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc8474">OBJECTID</a> extension.
 		/// </summary>
-		ObjectID         = 55,
+		ObjectID                       = 58,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc8508">REPLACE</a> extension.
 		/// </summary>
-		Replace          = 56,
+		Replace                        = 59,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc8514">SAVEDATE</a> extension.
 		/// </summary>
-		SaveDate         = 57,
+		SaveDate                       = 60,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc8970">PREVIEW</a> extension.
 		/// </summary>
-		Preview          = 58,
+		Preview                        = 61,
+
+		/// <summary>
+		/// The server implements the core IMAP4rev2 commands described in <a href="https://tools.ietf.org/html/rfc9051">rfc9051</a>.
+		/// </summary>
+		IMAP4rev2                      = 62,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc9208">QUOTASET</a> extension.
+		/// </summary>
+		QuotaSet                       = 63,
+
+		/// <summary>
+		/// The server supports the <c>STORAGE</c> resource type defined by the <a href="https://tools.ietf.org/html/rfc9208">QUOTA</a> extension (<c>QUOTA=RES-STORAGE</c>).
+		/// </summary>
+		QuotaResourceStorage           = 64,
+
+		/// <summary>
+		/// The server supports the <c>MESSAGE</c> resource type defined by the <a href="https://tools.ietf.org/html/rfc9208">QUOTA</a> extension (<c>QUOTA=RES-MESSAGE</c>).
+		/// </summary>
+		QuotaResourceMessage           = 65,
+
+		/// <summary>
+		/// The server supports the <c>MAILBOX</c> resource type defined by the <a href="https://tools.ietf.org/html/rfc9208">QUOTA</a> extension (<c>QUOTA=RES-MAILBOX</c>).
+		/// </summary>
+		QuotaResourceMailbox           = 66,
+
+		/// <summary>
+		/// The server supports the <c>ANNOTATION-STORAGE</c> resource type defined by the <a href="https://tools.ietf.org/html/rfc9208">QUOTA</a> extension (<c>QUOTA=RES-ANNOTATION-STORAGE</c>).
+		/// </summary>
+		QuotaResourceAnnotationStorage = 67,
 
 		/// <summary>
 		/// The server supports the <a href="https://tools.ietf.org/html/rfc9394">PARTIAL</a> extension.
 		/// </summary>
-		Partial          = 59,
+		Partial                        = 68,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc9585">INPROGRESS</a> extension.
+		/// </summary>
+		InProgress                     = 69,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc9586">UIDONLY</a> extension.
+		/// </summary>
+		UidOnly                        = 70,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc9590">LIST-METADATA</a> extension.
+		/// </summary>
+		ListMetadata                   = 71,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc9698">JMAPACCESS</a> extension.
+		/// </summary>
+		JmapAccess                     = 72,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc9738">MESSAGELIMIT</a> extension.
+		/// </summary>
+		/// <remarks>
+		/// The advertised value can be obtained using <see cref="ImapCapabilities.GetValues(string)"/>
+		/// with a key of <c>"MESSAGELIMIT"</c>.
+		/// </remarks>
+		MessageLimit                   = 73,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc9738">SAVELIMIT</a> extension.
+		/// </summary>
+		/// <remarks>
+		/// The advertised value can be obtained using <see cref="ImapCapabilities.GetValues(string)"/>
+		/// with a key of <c>"SAVELIMIT"</c>.
+		/// </remarks>
+		SaveLimit                      = 74,
+
+		/// <summary>
+		/// The server supports the <a href="https://tools.ietf.org/html/rfc10022">UIDBATCHES</a> extension.
+		/// </summary>
+		UidBatches                     = 75,
 
 		#region GMail Extensions
 
 		/// <summary>
 		/// The server supports the <a href="https://developers.google.com/gmail/imap_extensions">XLIST</a> extension (GMail).
 		/// </summary>
-		XList            = 60,
+		XList                          = 76,
 
 		/// <summary>
 		/// The server supports the <a href="https://developers.google.com/gmail/imap_extensions">X-GM-EXT1</a> extension (GMail).
 		/// </summary>
-		GMailExt1        = 61
+		GMailExt1                      = 77
 
 		#endregion
 	}

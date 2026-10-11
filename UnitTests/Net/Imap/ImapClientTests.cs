@@ -61,7 +61,7 @@ namespace UnitTests.Net.Imap {
 			ImapCapability.IMAP4rev1, ImapCapability.Status,
 			ImapCapability.LiteralPlus, ImapCapability.SaslIR, ImapCapability.LoginReferrals, ImapCapability.Id,
 			ImapCapability.Enable, ImapCapability.Idle, ImapCapability.Sort, ImapCapability.SortDisplay,
-			ImapCapability.Thread, ImapCapability.MultiAppend, ImapCapability.Catenate, ImapCapability.Unselect,
+			ImapCapability.Thread, ImapCapability.MultiAppend, ImapCapability.UrlPartial, ImapCapability.Catenate, ImapCapability.Unselect,
 			ImapCapability.Children, ImapCapability.Namespace, ImapCapability.UidPlus, ImapCapability.ListExtended,
 			ImapCapability.I18NLevel, ImapCapability.CondStore, ImapCapability.QuickResync, ImapCapability.ESearch,
 			ImapCapability.ESort, ImapCapability.SearchResults, ImapCapability.Within, ImapCapability.Context,
@@ -89,7 +89,7 @@ namespace UnitTests.Net.Imap {
 			ImapCapability.IMAP4, ImapCapability.IMAP4rev1,
 			ImapCapability.Status, ImapCapability.CondStore, ImapCapability.Enable, ImapCapability.QuickResync,
 			ImapCapability.Quota, ImapCapability.Namespace, ImapCapability.UidPlus, ImapCapability.Children,
-			ImapCapability.Binary, ImapCapability.Unselect, ImapCapability.Sort, ImapCapability.Catenate,
+			ImapCapability.Binary, ImapCapability.Unselect, ImapCapability.Sort, ImapCapability.Catenate, ImapCapability.UrlAuth,
 			ImapCapability.Language, ImapCapability.ESearch, ImapCapability.ESort, ImapCapability.Thread,
 			ImapCapability.Context, ImapCapability.Within, ImapCapability.SaslIR, ImapCapability.SearchResults,
 			ImapCapability.Metadata, ImapCapability.Id, ImapCapability.Annotate, ImapCapability.MultiSearch,
@@ -303,6 +303,62 @@ namespace UnitTests.Net.Imap {
 
 				Assert.That (client.Capabilities, Is.EquivalentTo (IMAP4rev2CoreCapabilities.Concat (new [] { ImapCapability.StartTLS, ImapCapability.LoginDisabled })), "Capabilities");
 				Assert.That (client.AuthenticationMechanisms, Does.Contain ("SCRAM-SHA-256"), "AUTH=SCRAM-SHA-256");
+			}
+		}
+
+		static IList<ImapReplayCommand> CreateNewerExtensionCapabilitiesCommands ()
+		{
+			return new List<ImapReplayCommand> {
+				new ImapReplayCommand ("", Encoding.ASCII.GetBytes ("* OK [CAPABILITY IMAP4rev1 URLAUTH URLAUTH=BINARY URL-PARTIAL IMAPSIEVE=sieve://localhost QUOTA QUOTASET QUOTA=RES-STORAGE QUOTA=RES-MESSAGE QUOTA=RES-MAILBOX QUOTA=RES-ANNOTATION-STORAGE QUOTA=RES-X-UNKNOWN INPROGRESS UIDONLY LIST-METADATA JMAPACCESS MESSAGELIMIT=1000 SAVELIMIT=500 UIDBATCHES] Service Ready\r\n")),
+			};
+		}
+
+		static void AssertNewerExtensionCapabilities (ImapClient client)
+		{
+			var expected = new [] {
+				ImapCapability.IMAP4rev1, ImapCapability.Status, ImapCapability.UrlAuth, ImapCapability.UrlAuthBinary,
+				ImapCapability.UrlPartial, ImapCapability.ImapSieve, ImapCapability.Quota, ImapCapability.QuotaSet,
+				ImapCapability.QuotaResourceStorage, ImapCapability.QuotaResourceMessage, ImapCapability.QuotaResourceMailbox,
+				ImapCapability.QuotaResourceAnnotationStorage, ImapCapability.InProgress, ImapCapability.UidOnly,
+				ImapCapability.ListMetadata, ImapCapability.JmapAccess, ImapCapability.MessageLimit, ImapCapability.SaveLimit,
+				ImapCapability.UidBatches
+			};
+
+			Assert.That (client.Capabilities, Is.EquivalentTo (expected), "Capabilities");
+			Assert.That (client.Capabilities.GetValues ("IMAPSIEVE"), Is.EqualTo (new [] { "sieve://localhost" }), "IMAPSIEVE");
+			Assert.That (client.Capabilities.GetValues ("MESSAGELIMIT"), Is.EqualTo (new [] { "1000" }), "MESSAGELIMIT");
+			Assert.That (client.Capabilities.GetValues ("SAVELIMIT"), Is.EqualTo (new [] { "500" }), "SAVELIMIT");
+		}
+
+		[Test]
+		public void TestNewerExtensionCapabilities ()
+		{
+			var commands = CreateNewerExtensionCapabilitiesCommands ();
+
+			using (var client = new ImapClient () { TagPrefix = 'A' }) {
+				try {
+					client.Connect (new ImapReplayStream (commands, false), "localhost", 143, SecureSocketOptions.None);
+				} catch (Exception ex) {
+					Assert.Fail ($"Did not expect an exception in Connect: {ex}");
+				}
+
+				AssertNewerExtensionCapabilities (client);
+			}
+		}
+
+		[Test]
+		public async Task TestNewerExtensionCapabilitiesAsync ()
+		{
+			var commands = CreateNewerExtensionCapabilitiesCommands ();
+
+			using (var client = new ImapClient () { TagPrefix = 'A' }) {
+				try {
+					await client.ConnectAsync (new ImapReplayStream (commands, true), "localhost", 143, SecureSocketOptions.None);
+				} catch (Exception ex) {
+					Assert.Fail ($"Did not expect an exception in Connect: {ex}");
+				}
+
+				AssertNewerExtensionCapabilities (client);
 			}
 		}
 
@@ -8034,7 +8090,7 @@ namespace UnitTests.Net.Imap {
 		};
 			var AuthenticatedCapabilities = new [] {
 			ImapCapability.IMAP4, ImapCapability.IMAP4rev1, ImapCapability.Status,
-				ImapCapability.AppendLimit, ImapCapability.CreateSpecialUse, ImapCapability.Quota, ImapCapability.Children,
+				ImapCapability.AppendLimit, ImapCapability.CreateSpecialUse, ImapCapability.QuotaResourceMailbox, ImapCapability.Quota, ImapCapability.Children,
 				ImapCapability.CondStore, ImapCapability.Enable, ImapCapability.ESort, ImapCapability.ESearch, ImapCapability.I18NLevel,
 				ImapCapability.Id, ImapCapability.Idle, ImapCapability.Move, /*ImapCapability.ListStatus, ImapCapability.ListExtended,*/
 				ImapCapability.LiteralPlus, ImapCapability.Namespace, /*ImapCapability.Preview,*/ ImapCapability.FuzzySearch,
@@ -8088,7 +8144,7 @@ namespace UnitTests.Net.Imap {
 		};
 			var AuthenticatedCapabilities = new [] {
 			ImapCapability.IMAP4, ImapCapability.IMAP4rev1, ImapCapability.Status,
-				ImapCapability.AppendLimit, ImapCapability.CreateSpecialUse, ImapCapability.Quota, ImapCapability.Children,
+				ImapCapability.AppendLimit, ImapCapability.CreateSpecialUse, ImapCapability.QuotaResourceMailbox, ImapCapability.Quota, ImapCapability.Children,
 				ImapCapability.CondStore, ImapCapability.Enable, ImapCapability.ESort, ImapCapability.ESearch, ImapCapability.I18NLevel,
 				ImapCapability.Id, ImapCapability.Idle, ImapCapability.Move, /*ImapCapability.ListStatus, ImapCapability.ListExtended,*/
 				ImapCapability.LiteralPlus, ImapCapability.Namespace, /*ImapCapability.Preview,*/ ImapCapability.FuzzySearch,
