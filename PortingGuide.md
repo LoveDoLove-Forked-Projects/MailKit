@@ -348,6 +348,7 @@ also affects mocking frameworks, which can't mock extension methods.
 | `IMailFolder` | none | `DeletedCount` property and `DeletedCountChanged` event (already provided by `MailFolder`) |
 | `IStoreRequest`, `IAppendRequest` (and derived interfaces) | none | `OnStarted ()` and `OnCompleted ()` methods (no-ops in the built-in classes) |
 | `IMailService` (and `IMailStore`, `IMailTransport`, `IMailSpool`) | none | `ValueTask DisposeAsync ()` (already provided by `MailService`) |
+| `IImapClient` | none | `ImapIdleSession CreateIdleSession (ImapIdleOptions? options = null)` (already provided by `ImapClient`) |
 
 The request-based `Store ()` overloads for annotations return the messages that weren't modified
 (`IList<UniqueId>`/`IList<int>`), or `bool` for a single message.
@@ -472,3 +473,7 @@ These are not required to port, but they often simplify code that worked around 
 * `ImapFeatures.IMAP4rev2` and `StatusItems.Deleted`/`IMailFolder.DeletedCount`.
 * `await using var client = new ImapClient ();` now works because `MailService` implements
   `IAsyncDisposable`. It does not log out, so keep calling `DisconnectAsync (true)` first.
+* `ImapIdleSession` (`client.CreateIdleSession ()`) instead of a hand-written `Idle ()` loop with
+  `CountChanged`/`MessageExpunged`/`MessageFlagsChanged` event handlers and timers that restart `IDLE`
+  every few minutes. `WaitForChangesAsync ()` returns a batch of changes, re-issues `IDLE`
+  automatically, falls back to `NOOP` polling and stops gracefully when cancelled.

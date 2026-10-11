@@ -477,6 +477,26 @@ namespace MailKit.Net.Imap {
 		Task IdleAsync (CancellationToken doneToken, CancellationToken cancellationToken = default);
 
 		/// <summary>
+		/// Create a new <see cref="ImapIdleSession"/> for waiting on changes to the selected folder.
+		/// </summary>
+		/// <remarks>
+		/// <para>Creates a new <see cref="ImapIdleSession"/> that can be used to wait for changes
+		/// to the selected folder without having to manage the IDLE command manually.</para>
+		/// <para>The idle session automatically re-issues the IDLE command before servers
+		/// time it out, falls back to polling with NOOP when the server does not support the
+		/// IDLE extension, and returns the changes that occurred as a batch.</para>
+		/// </remarks>
+		/// <example>
+		/// <code language="c#" source="Examples\ImapIdleSessionExample.cs"/>
+		/// </example>
+		/// <returns>The idle session.</returns>
+		/// <param name="options">The idle options or <see langword="null" /> to use the default options.</param>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="ImapClient"/> has been disposed.
+		/// </exception>
+		ImapIdleSession CreateIdleSession (ImapIdleOptions? options = null);
+
+		/// <summary>
 		/// Request the specified notification events from the IMAP server.
 		/// </summary>
 		/// <remarks>

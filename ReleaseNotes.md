@@ -170,6 +170,8 @@ See [PortingGuide.md](PortingGuide.md) for step-by-step instructions on porting 
   `IList<AccessControl>` and `IReadOnlyList<AccessControl>` (and keeps `AddRange ()`), and its methods throw
   `ArgumentNullException` when given a `null` access control. Use LINQ in place
   of `List<T>`-only methods such as `Find ()`, `Sort ()` or `ForEach ()`.
+* `IImapClient` has a new `CreateIdleSession ()` method. Custom implementations of `IImapClient` must
+  implement it.
 
 ### New Features
 
@@ -224,6 +226,17 @@ See [PortingGuide.md](PortingGuide.md) for step-by-step instructions on porting 
   `AppendUidResponseCode`, `CopyUidResponseCode`, `BadUrlResponseCode`, `UndefinedFilterResponseCode`,
   `WebAlertResponseCode` and `MaxConvertResponseCode`) public. They have public constructors so that
   `ImapCommandException` instances can be created in unit tests.
+* Added `ImapIdleSession`, created with `ImapClient.CreateIdleSession ()`, which waits for changes to the
+  selected folder without having to manage the `IDLE` command manually:
+  * `WaitForChanges ()`/`WaitForChangesAsync ()` return an `ImapIdleChanges` batch of events
+    (`CountChangedIdleEvent`, `MessageExpungedIdleEvent`, `MessagesVanishedIdleEvent`,
+    `MessageChangedIdleEvent` and `FolderStatusChangedIdleEvent`), and `ReadChangesAsync ()` returns
+    the batches as an `IAsyncEnumerable<ImapIdleChanges>`.
+  * The `IDLE` command is automatically re-issued before servers time it out, and bursts of events are
+    coalesced into a single batch. If the server does not support `IDLE`, the session polls with `NOOP`.
+  * Cancelling the `CancellationToken` ends the `IDLE` command gracefully, so the client stays connected
+    and usable.
+  * `ImapIdleOptions` controls the refresh interval, the polling interval and the coalescing delay.
 * Added `ImapFeatures.IMAP4rev2` which can be used with `ImapClient.Enable ()` to enable IMAP4rev2 semantics
   on servers that advertise both `IMAP4rev1` and `IMAP4rev2` (rfc9051 Appendix A). Once enabled, `ImapClient`
   uses UTF-8 mailbox names and assumes the extensions implied by IMAP4rev2.

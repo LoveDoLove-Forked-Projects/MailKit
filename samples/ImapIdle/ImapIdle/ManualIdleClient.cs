@@ -1,9 +1,9 @@
 ﻿//
-// IdleClient.cs
+// ManualIdleClient.cs
 //
 // Author: Jeffrey Stedfast <jeff@xamarin.com>
 //
-// Copyright (c) 2014-2024 Jeffrey Stedfast
+// Copyright (c) 2014-2026 Jeffrey Stedfast
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,68 +28,21 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 using MailKit;
 using MailKit.Net.Imap;
 
 namespace ImapIdle
 {
-	public class IdleClient : IDisposable
+	/// <summary>
+	/// Demonstrates the "classic" way of using IMAP IDLE: subscribe to the folder events,
+	/// call <see cref="ImapClient.IdleAsync(CancellationToken, CancellationToken)"/> in a loop
+	/// and cancel the <c>done</c> token from within an event handler when there is work to do.
+	/// </summary>
+	public class ManualIdleClient : IdleClientBase
 	{
-		readonly List<IMessageSummary> messages;
-		CancellationTokenSource cancel;
 		CancellationTokenSource done;
-		readonly FetchRequest request;
-		readonly ImapClient client;
 		bool messagesArrived;
-
-		public IdleClient ()
-		{
-			client = new ImapClient (new ProtocolLogger (Console.OpenStandardError ()));
-			request = new FetchRequest (MessageSummaryItems.Full | MessageSummaryItems.UniqueId);
-			messages = new List<IMessageSummary> ();
-			cancel = new CancellationTokenSource ();
-		}
-
-		async Task ReconnectAsync ()
-		{
-			if (!client.IsConnected)
-				await client.ConnectAsync (Program.Host, Program.Port, Program.SslOptions, cancel.Token);
-
-			if (!client.IsAuthenticated) {
-				await client.AuthenticateAsync (Program.Username, Program.Password, cancel.Token);
-
-				await client.Inbox.OpenAsync (FolderAccess.ReadOnly, cancel.Token);
-			}
-		}
-
-		async Task FetchMessageSummariesAsync (bool print)
-		{
-			IList<IMessageSummary> fetched;
-
-			do {
-				try {
-					// fetch summary information for messages that we don't already have
-					int startIndex = messages.Count;
-
-					fetched = client.Inbox.Fetch (startIndex, -1, request, cancel.Token);
-					break;
-				} catch (ImapProtocolException) {
-					// protocol exceptions often result in the client getting disconnected
-					await ReconnectAsync ();
-				} catch (IOException) {
-					// I/O exceptions always result in the client getting disconnected
-					await ReconnectAsync ();
-				}
-			} while (true);
-
-			foreach (var message in fetched) {
-				if (print)
-					Console.WriteLine ("{0}: new message: {1}", client.Inbox, message.Envelope.Subject);
-				messages.Add (message);
-			}
-		}
 
 		async Task WaitForNewMessagesAsync ()
 		{
@@ -123,33 +76,8 @@ namespace ImapIdle
 			} while (true);
 		}
 
-		async Task IdleAsync ()
+		protected override async Task IdleAsync ()
 		{
-			do {
-				try {
-					await WaitForNewMessagesAsync ();
-
-					if (messagesArrived) {
-						await FetchMessageSummariesAsync (true);
-						messagesArrived = false;
-					}
-				} catch (OperationCanceledException) {
-					break;
-				}
-			} while (!cancel.IsCancellationRequested);
-		}
-
-		public async Task RunAsync ()
-		{
-			// connect to the IMAP server and get our initial list of messages
-			try {
-				await ReconnectAsync ();
-				await FetchMessageSummariesAsync (false);
-			} catch (OperationCanceledException) {
-				await client.DisconnectAsync (true);
-				return;
-			}
-
 			// Note: We capture client.Inbox here because cancelling IdleAsync() *may* require
 			// disconnecting the IMAP client connection, and, if it does, the `client.Inbox`
 			// property will no longer be accessible which means we won't be able to disconnect
@@ -166,13 +94,24 @@ namespace ImapIdle
 			// keep track of flag changes
 			inbox.MessageFlagsChanged += OnMessageFlagsChanged;
 
-			await IdleAsync ();
+			try {
+				do {
+					try {
+						await WaitForNewMessagesAsync ();
 
-			inbox.MessageFlagsChanged -= OnMessageFlagsChanged;
-			inbox.MessageExpunged -= OnMessageExpunged;
-			inbox.CountChanged -= OnCountChanged;
-
-			await client.DisconnectAsync (true);
+						if (messagesArrived) {
+							await FetchMessageSummariesAsync (true);
+							messagesArrived = false;
+						}
+					} catch (OperationCanceledException) {
+						break;
+					}
+				} while (!cancel.IsCancellationRequested);
+			} finally {
+				inbox.MessageFlagsChanged -= OnMessageFlagsChanged;
+				inbox.MessageExpunged -= OnMessageExpunged;
+				inbox.CountChanged -= OnCountChanged;
+			}
 		}
 
 		// Note: the CountChanged event will fire when new messages arrive in the folder and/or when messages are expunged.
@@ -203,20 +142,7 @@ namespace ImapIdle
 
 		void OnMessageExpunged (object sender, MessageEventArgs e)
 		{
-			var folder = (ImapFolder) sender;
-
-			if (e.Index < messages.Count) {
-				var message = messages[e.Index];
-
-				Console.WriteLine ("{0}: message #{1} has been expunged: {2}", folder, e.Index, message.Envelope.Subject);
-
-				// Note: If you are keeping a local cache of message information
-				// (e.g. MessageSummary data) for the folder, then you'll need
-				// to remove the message at e.Index.
-				messages.RemoveAt (e.Index);
-			} else {
-				Console.WriteLine ("{0}: message #{1} has been expunged.", folder, e.Index);
-			}
+			RemoveExpungedMessage ((IMailFolder) sender, e.Index);
 		}
 
 		void OnMessageFlagsChanged (object sender, MessageFlagsChangedEventArgs e)
@@ -224,19 +150,6 @@ namespace ImapIdle
 			var folder = (ImapFolder) sender;
 
 			Console.WriteLine ("{0}: flags have changed for message #{1} ({2}).", folder, e.Index, e.Flags);
-		}
-
-		public void Exit ()
-		{
-			cancel.Cancel ();
-		}
-
-		public void Dispose ()
-		{
-			client.Dispose ();
-			cancel.Dispose ();
-
-			GC.SuppressFinalize (this);
 		}
 	}
 }

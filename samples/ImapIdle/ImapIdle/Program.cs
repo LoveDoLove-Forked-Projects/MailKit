@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jeff@xamarin.com>
 //
-// Copyright (c) 2014-2024 Jeffrey Stedfast
+// Copyright (c) 2014-2026 Jeffrey Stedfast
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -41,9 +41,29 @@ namespace ImapIdle {
 		public const string Username = "username@gmail.com";
 		public const string Password = "password";
 
+		static IdleClientBase CreateClient (string[] args)
+		{
+			var mode = args.Length > 0 ? args[0] : "--session";
+
+			switch (mode) {
+			case "--manual":
+				Console.WriteLine ("Using ImapClient.IdleAsync() with folder events.");
+				return new ManualIdleClient ();
+			case "--session":
+				Console.WriteLine ("Using ImapIdleSession.");
+				return new IdleSessionClient ();
+			default:
+				Console.WriteLine ("Usage: ImapIdle [--session | --manual]");
+				return null;
+			}
+		}
+
 		public static void Main (string[] args)
 		{
-			using (var client = new IdleClient ()) {
+			using (var client = CreateClient (args)) {
+				if (client == null)
+					return;
+
 				Console.WriteLine ("Hit any key to end the demo.");
 
 				var idleTask = client.RunAsync ();

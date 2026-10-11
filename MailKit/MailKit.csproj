@@ -96,6 +96,10 @@
     <Compile Include="Net\Imap\ImapFolderFlags.cs" />
     <Compile Include="Net\Imap\ImapFolderSearch.cs" />
     <Compile Include="Net\Imap\ImapIdleContext.cs" />
+    <Compile Include="Net\Imap\ImapIdleEvent.cs" />
+    <Compile Include="Net\Imap\ImapIdleChanges.cs" />
+    <Compile Include="Net\Imap\ImapIdleOptions.cs" />
+    <Compile Include="Net\Imap\ImapIdleSession.cs" />
     <Compile Include="Net\Imap\ImapImplementation.cs" />
     <Compile Include="Net\Imap\ImapLiteral.cs" />
     <Compile Include="Net\Imap\ImapProtocolException.cs" />

@@ -1870,6 +1870,16 @@ namespace MailKit.Net.Imap {
 				throw new InvalidOperationException ("An ImapFolder has not been opened.");
 		}
 
+		internal void CheckCanWaitForChanges ()
+		{
+			CheckDisposed ();
+			CheckConnected ();
+			CheckAuthenticated ();
+
+			if (engine.State != ImapEngineState.Selected)
+				throw new InvalidOperationException ("An ImapFolder has not been opened.");
+		}
+
 		ImapCommand QueueIdleCommand (ImapIdleContext context, CancellationToken cancellationToken)
 		{
 			var ic = engine.QueueCommand (cancellationToken, null, "IDLE\r\n");
@@ -1952,6 +1962,31 @@ namespace MailKit.Net.Imap {
 
 				ProcessIdleResponse (ic);
 			}
+		}
+
+		/// <summary>
+		/// Create a new <see cref="ImapIdleSession"/> for waiting on changes to the selected folder.
+		/// </summary>
+		/// <remarks>
+		/// <para>Creates a new <see cref="ImapIdleSession"/> that can be used to wait for changes
+		/// to the selected folder without having to manage the IDLE command manually.</para>
+		/// <para>The idle session automatically re-issues the IDLE command before servers
+		/// time it out, falls back to polling with NOOP when the server does not support the
+		/// IDLE extension, and returns the changes that occurred as a batch.</para>
+		/// </remarks>
+		/// <example>
+		/// <code language="c#" source="Examples\ImapIdleSessionExample.cs"/>
+		/// </example>
+		/// <returns>The idle session.</returns>
+		/// <param name="options">The idle options or <see langword="null" /> to use the default options.</param>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="ImapClient"/> has been disposed.
+		/// </exception>
+		public ImapIdleSession CreateIdleSession (ImapIdleOptions? options = null)
+		{
+			CheckDisposed ();
+
+			return new ImapIdleSession (this, engine, (options ?? new ImapIdleOptions ()).Clone ());
 		}
 
 		ImapCommand QueueNotifyCommand (bool status, IList<ImapEventGroup> eventGroups, CancellationToken cancellationToken, out bool notifySelectedNewExpunge)

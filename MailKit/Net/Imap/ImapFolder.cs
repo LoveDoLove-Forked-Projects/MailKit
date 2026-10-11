@@ -58,7 +58,7 @@ namespace MailKit.Net.Imap {
 	public partial class ImapFolder : MailFolder, IImapFolder
 	{
 		bool supportsModSeq;
-		bool countChanged;
+		int queuedExpunges;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="MailKit.Net.Imap.ImapFolder"/> class.
@@ -6429,7 +6429,18 @@ namespace MailKit.Net.Imap {
 
 		internal void OnExists (int count)
 		{
-			countChanged = false;
+			var session = Engine.IdleSession;
+			int previous = Count;
+
+			if (session != null) {
+				if (queuedExpunges > 0)
+					session.OnEvent (new CountChangedIdleEvent (this, previous + queuedExpunges, previous));
+
+				if (count != previous)
+					session.OnEvent (new CountChangedIdleEvent (this, previous, count));
+			}
+
+			queuedExpunges = 0;
 			Count = count;
 
 			OnCountChanged ();
@@ -6440,16 +6451,23 @@ namespace MailKit.Net.Imap {
 			// Note: It is not required for the IMAP server to send an explicit untagged `* # EXISTS` response if it sends
 			// untagged `* # EXPUNGE` responses, so we queue a CountChanged event (that is only emitted if the server does
 			// NOT send the `* # EXISTS` response).
-			countChanged = true;
+			queuedExpunges++;
 			Count--;
+
+			Engine.IdleSession?.OnEvent (new MessageExpungedIdleEvent (this, index));
 
 			OnMessageExpunged (new MessageEventArgs (index));
 		}
 
 		internal void FlushQueuedEvents ()
 		{
-			if (countChanged) {
-				countChanged = false;
+			if (queuedExpunges > 0) {
+				int previous = Count + queuedExpunges;
+
+				queuedExpunges = 0;
+
+				Engine.IdleSession?.OnEvent (new CountChangedIdleEvent (this, previous, Count));
+
 				OnCountChanged ();
 			}
 		}
@@ -6461,6 +6479,8 @@ namespace MailKit.Net.Imap {
 
 			if ((message.Fields & MessageSummaryItems.UniqueId) != 0)
 				uid = message.UniqueId;
+
+			Engine.IdleSession?.OnEvent (new MessageChangedIdleEvent (this, message));
 
 			if (message.Flags.HasValue) {
 				var args = new MessageFlagsChangedEventArgs (index, message.Flags.Value, (HashSet<string>) message.Keywords) {
@@ -6522,6 +6542,8 @@ namespace MailKit.Net.Imap {
 
 			Recent = count;
 
+			Engine.IdleSession?.OnEvent (new FolderStatusChangedIdleEvent (this, StatusItems.Recent));
+
 			OnRecentChanged ();
 		}
 
@@ -6529,10 +6551,16 @@ namespace MailKit.Net.Imap {
 		{
 			var vanished = ImapEngine.ParseUidSet (token, UidValidity, out _, out _, ImapEngine.GenericUntaggedResponseSyntaxErrorFormat, "VANISHED", token);
 
+			Engine.IdleSession?.OnEvent (new MessagesVanishedIdleEvent (this, vanished, earlier));
+
 			OnMessagesVanished (new MessagesVanishedEventArgs (vanished, earlier));
 
 			if (!earlier) {
+				int previous = Count;
+
 				Count -= vanished.Count;
+
+				Engine.IdleSession?.OnEvent (new CountChangedIdleEvent (this, previous, Count));
 
 				OnCountChanged ();
 			}
@@ -6645,6 +6673,8 @@ namespace MailKit.Net.Imap {
 
 			Unread = count;
 
+			Engine.IdleSession?.OnEvent (new FolderStatusChangedIdleEvent (this, StatusItems.Unread));
+
 			OnUnreadChanged ();
 		}
 
@@ -6654,6 +6684,8 @@ namespace MailKit.Net.Imap {
 				return;
 
 			UidNext = uid;
+
+			Engine.IdleSession?.OnEvent (new FolderStatusChangedIdleEvent (this, StatusItems.UidNext));
 
 			OnUidNextChanged ();
 		}
@@ -6670,6 +6702,8 @@ namespace MailKit.Net.Imap {
 
 			Size = size;
 
+			Engine.IdleSession?.OnEvent (new FolderStatusChangedIdleEvent (this, StatusItems.Size));
+
 			OnSizeChanged ();
 		}
 
@@ -6679,6 +6713,8 @@ namespace MailKit.Net.Imap {
 				return;
 
 			DeletedCount = deleted;
+
+			Engine.IdleSession?.OnEvent (new FolderStatusChangedIdleEvent (this, StatusItems.Deleted));
 
 			OnDeletedCountChanged ();
 		}
@@ -6690,6 +6726,8 @@ namespace MailKit.Net.Imap {
 
 			Id = id;
 
+			Engine.IdleSession?.OnEvent (new FolderStatusChangedIdleEvent (this, StatusItems.MailboxId));
+
 			OnIdChanged ();
 		}
 
@@ -6700,6 +6738,8 @@ namespace MailKit.Net.Imap {
 
 			HighestModSeq = modseq;
 
+			Engine.IdleSession?.OnEvent (new FolderStatusChangedIdleEvent (this, StatusItems.HighestModSeq));
+
 			OnHighestModSeqChanged ();
 		}
 
@@ -6709,6 +6749,8 @@ namespace MailKit.Net.Imap {
 				return;
 
 			UidValidity = validity;
+
+			Engine.IdleSession?.OnEvent (new FolderStatusChangedIdleEvent (this, StatusItems.UidValidity));
 
 			OnUidValidityChanged ();
 		}

@@ -2,13 +2,14 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MailKit" Version="4.18.1" />
+    <ProjectReference Include="..\..\..\submodules\MimeKit\MimeKit\MimeKit.csproj" />
+    <ProjectReference Include="..\..\..\MailKit\MailKit.csproj" />
   </ItemGroup>
 
 </Project>

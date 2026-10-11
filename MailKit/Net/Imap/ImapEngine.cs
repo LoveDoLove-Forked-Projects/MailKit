@@ -432,6 +432,17 @@ namespace MailKit.Net.Imap {
 		}
 
 		/// <summary>
+		/// Get or set the <see cref="ImapIdleSession"/> that is currently waiting for changes.
+		/// </summary>
+		/// <remarks>
+		/// Gets or sets the <see cref="ImapIdleSession"/> that is currently waiting for changes, if any.
+		/// </remarks>
+		/// <value>The idle session.</value>
+		internal ImapIdleSession? IdleSession {
+			get; set;
+		}
+
+		/// <summary>
 		/// Get whether or not the connection is secure (typically via SSL or TLS).
 		/// </summary>
 		/// <remarks>

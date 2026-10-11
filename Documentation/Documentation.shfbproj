@@ -129,6 +129,7 @@
     <None Include="Examples\ImapBodyPartExamples.cs" />
     <None Include="Examples\ImapExamples.cs" />
     <None Include="Examples\ImapIdleExample.cs" />
+    <None Include="Examples\ImapIdleSessionExample.cs" />
     <None Include="Examples\MessageDeliveryStatusExamples.cs" />
     <None Include="Examples\MimeIterator.cs" />
     <None Include="Examples\MimeMessageLoad.cs" />
